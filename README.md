@@ -27,13 +27,13 @@ Automatisiertes Installationsskript für ERPNext 15 auf Ubuntu 22.04/24.04 LXC C
 ### Ein-Zeiler Installation
 
 ```bash
-bash -c "$(wget -qLO - https://raw.githubusercontent.com/IHR-USERNAME/erpnext-proxmox-install/main/install.sh)"
+bash -c "$(wget -qLO - https://raw.githubusercontent.com/HatchetMan111/erpnext-proxmox-install/main/install.sh)"
 ```
 
 oder mit curl:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/IHR-USERNAME/erpnext-proxmox-install/main/install.sh)"
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/HatchetMan111/erpnext-proxmox-install/main/install.sh)"
 ```
 
 ## Manuelle Installation
