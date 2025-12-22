@@ -1,94 +1,151 @@
-# ERPNext 15 Proxmox Installation Script
+# ERPNext 15 - Proxmox Installation Script
 
-Automatisiertes Installationsskript für ERPNext 15 auf Ubuntu 22.04/24.04 LXC Containern in Proxmox.
+Automatisches Installationsskript für ERPNext 15 auf Ubuntu 22.04/24.04 LXC Containern in Proxmox VE im Stil der Community Helper Scripts.
 
-## Features
+Dieses Script installiert ERPNext 15 (inkl. Frappe Framework & HRMS) komplett automatisiert mit allen notwendigen Dependencies: MariaDB, Redis, Node.js, Nginx und optional SSL via Let's Encrypt.
 
-- ✅ Vollautomatische Installation von ERPNext 15
-- ✅ Unterstützung für Ubuntu 22.04 und 24.04
-- ✅ Frappe Framework Version 15
-- ✅ MariaDB mit optimierter Konfiguration
-- ✅ Redis für Caching
-- ✅ Optional: Production Setup mit Nginx und SSL (Let's Encrypt)
-- ✅ Optional: HRMS App Installation
-- ✅ Interaktive Konfiguration
-- ✅ Farbige Ausgabe im Stil der Proxmox Helper Scripts
+## 🚀 Schnellinstallation
 
-## Voraussetzungen
-
-- Proxmox VE 7.x oder 8.x
-- Ubuntu 22.04 oder 24.04 LXC Container
-- Mindestens 2 CPU Cores
-- Mindestens 4 GB RAM
-- Mindestens 20 GB Speicher
-
-## Schnellinstallation
-
-### Ein-Zeiler Installation
+### Empfohlene Methode (wget):
 
 ```bash
-bash -c "$(wget -qLO - https://raw.githubusercontent.com/HatchetMan111/erpnext-proxmox-install/main/install.sh)"
+bash -c "$(wget -qLO - https://raw.githubusercontent.com/HatchetMan111/ERP-Proxmox/main/install.sh)"
 ```
 
-oder mit curl:
+### Alternative Methode (curl):
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/HatchetMan111/erpnext-proxmox-install/main/install.sh)"
+bash <(curl -fsSL https://raw.githubusercontent.com/HatchetMan111/ERP-Proxmox/main/install.sh)
 ```
 
-## Manuelle Installation
+## ✨ Features
 
-1. LXC Container in Proxmox erstellen:
-   - Template: Ubuntu 22.04 oder 24.04
-   - CPU: 2+ Cores
-   - RAM: 4096 MB
-   - Disk: 20 GB
-   - Netzwerk: Mit Internet-Zugang
+- ✅ **Vollautomatische Installation** - Ein Befehl, fertig!
+- ✅ **Frappe Framework 15** - Neueste Version
+- ✅ **ERPNext 15** - Enterprise Resource Planning
+- ✅ **HRMS App** - Human Resource Management
+- ✅ **MariaDB** - Optimierte Datenbank-Konfiguration
+- ✅ **Redis** - High-Performance Caching
+- ✅ **Node.js 18** - Moderne JavaScript Runtime
+- ✅ **Production Ready** - Optional mit Nginx & SSL
+- ✅ **Let's Encrypt SSL** - Kostenlose SSL-Zertifikate
+- ✅ **Interaktive Konfiguration** - Einfache Setup-Dialoge
+- ✅ **Farbige Ausgabe** - Übersichtliche Installation
 
-2. Container starten und einloggen
+## 📋 Voraussetzungen
 
-3. Script herunterladen und ausführen:
+### Minimale LXC Container Anforderungen:
+
+- ✅ **OS**: Ubuntu 22.04 oder 24.04
+- ✅ **CPU**: 2+ Cores empfohlen (Minimum: 2)
+- ✅ **RAM**: 4096 MB empfohlen (Minimum: 2048 MB)
+- ✅ **Disk**: 20 GB empfohlen (Minimum: 10 GB)
+- ✅ **Netzwerk**: Zugang zum Internet
+- ✅ **Root-Zugriff**: Erforderlich
+
+### Empfohlene Proxmox LXC Konfiguration:
 
 ```bash
-wget https://raw.githubusercontent.com/IHR-USERNAME/erpnext-proxmox-install/main/install.sh
-chmod +x install.sh
-./install.sh
+# Container erstellen in Proxmox Web UI:
+# CT ID: [Ihre Wahl]
+# Template: Ubuntu 22.04 oder 24.04
+# Disk: 20 GB
+# CPU: 2 Cores
+# Memory: 4096 MB
+# Swap: 512 MB
+# Network: vmbr0 mit DHCP oder statischer IP
+# Features: Nesting aktivieren (für bessere Kompatibilität)
 ```
 
-## Installationsoptionen
+Oder per CLI:
 
-Das Script fragt während der Installation folgende Informationen ab:
+```bash
+pct create 100 local:vztmpl/ubuntu-24.04-standard_24.04-2_amd64.tar.zst \
+  --hostname erpnext \
+  --cores 2 \
+  --memory 4096 \
+  --swap 512 \
+  --rootfs local-lvm:20 \
+  --net0 name=eth0,bridge=vmbr0,ip=dhcp \
+  --features nesting=1 \
+  --unprivileged 1
+```
 
-1. **Site Name**: Der Domain-Name für Ihre ERPNext Installation (z.B. `erp.example.com`)
-2. **MySQL Root Password**: Root-Passwort für die MariaDB Datenbank
-3. **Admin Password**: Passwort für den ERPNext Administrator
+## 🎯 Installation
+
+### Schritt 1: LXC Container vorbereiten
+
+1. In Proxmox: Container erstellen (siehe Voraussetzungen)
+2. Container starten
+3. Als root einloggen
+
+### Schritt 2: Script ausführen
+
+```bash
+bash -c "$(wget -qLO - https://raw.githubusercontent.com/HatchetMan111/ERP-Proxmox/main/install.sh)"
+```
+
+### Schritt 3: Konfiguration eingeben
+
+Das Script fragt folgende Informationen ab:
+
+1. **Site Name**: Domain für ERPNext (z.B. `erp.example.com` oder `erp.local`)
+2. **MySQL Root Password**: Sicheres Passwort für MariaDB
+3. **ERPNext Admin Password**: Passwort für Administrator-Account
 4. **Production Setup**: 
-   - `y`: Installiert Nginx als Reverse Proxy und richtet SSL ein
-   - `n`: Development Setup (Zugriff über Port 8000)
-5. **Let's Encrypt Email**: (nur bei Production Setup) Email für SSL Zertifikate
+   - `y` → Nginx + SSL (empfohlen für Produktiv-Umgebungen)
+   - `n` → Development Mode (Port 8000)
+5. **Let's Encrypt Email**: (nur bei Production) Email für SSL-Benachrichtigungen
 
-## Nach der Installation
+### Schritt 4: Warten & Genießen ☕
 
-### Development Setup (ohne Production)
+Die Installation dauert ca. 15-20 Minuten. Das Script:
+- Installiert alle Dependencies
+- Konfiguriert MariaDB & Redis
+- Initialisiert Frappe Bench
+- Installiert ERPNext & HRMS
+- Richtet Nginx ein (optional)
+- Konfiguriert SSL (optional)
+
+## 🎮 Nach der Installation
+
+### Development Setup (Port 8000)
+
+Wenn Sie Development Mode gewählt haben:
 
 ```bash
+# Zum Bench Verzeichnis wechseln
 cd /home/frappe/frappe-bench
+
+# Server starten
 bench start
 ```
 
-Zugriff über: `http://[CONTAINER-IP]:8000`
+**Zugriff**: `http://[CONTAINER-IP]:8000`
 
-### Production Setup
+### Production Setup (Nginx)
 
-Zugriff über: `https://[SITE-NAME]`
+Wenn Sie Production Mode gewählt haben:
 
-### Wichtige Befehle
+**Zugriff**: `https://[IHRE-DOMAIN]` oder `http://[CONTAINER-IP]`
+
+Services laufen automatisch im Hintergrund.
+
+## 🔐 Login Daten
+
+- **URL**: Siehe oben je nach Setup
+- **Benutzername**: `Administrator`
+- **Passwort**: [Von Ihnen während Installation festgelegt]
+
+## 📚 Wichtige Befehle
+
+### Basis-Befehle
 
 ```bash
-# Wechsel zum Bench Verzeichnis
+# Zum Bench Verzeichnis
 cd /home/frappe/frappe-bench
 
-# Services neustarten
+# Services neustarten (Production)
 bench restart
 
 # System aktualisieren
@@ -100,106 +157,118 @@ bench backup
 # Datenbank migrieren
 bench migrate
 
+# Bench Status
+bench --version
+```
+
+### App Management
+
+```bash
 # Neue App installieren
 bench get-app [APP-NAME]
 bench --site [SITE-NAME] install-app [APP-NAME]
 
-# Logs anzeigen
+# Installierte Apps anzeigen
+bench --site [SITE-NAME] list-apps
+
+# App entfernen
+bench --site [SITE-NAME] uninstall-app [APP-NAME]
+```
+
+### Site Management
+
+```bash
+# Neue Site erstellen
+bench new-site [SITE-NAME]
+
+# Sites auflisten
+bench --site all list
+
+# Site löschen
+bench drop-site [SITE-NAME]
+```
+
+### Logs & Debugging
+
+```bash
+# Logs ansehen (Development)
+cd /home/frappe/frappe-bench
 bench --site [SITE-NAME] console
 
 # Supervisor Status (Production)
 sudo supervisorctl status
+
+# Nginx Logs (Production)
+sudo tail -f /var/log/nginx/error.log
+sudo tail -f /var/log/nginx/access.log
+
+# Bench Logs
+tail -f logs/web.error.log
+tail -f logs/worker.error.log
 ```
 
-## Standard Zugangsdaten
+## 🔧 Troubleshooting
 
-- **Benutzername**: Administrator
-- **Passwort**: [Während Installation festgelegt]
-
-## Installierte Komponenten
-
-- **Frappe Framework**: Version 15
-- **ERPNext**: Version 15
-- **HRMS**: Version 15
-- **MariaDB**: 10.x
-- **Redis**: 6.x
-- **Node.js**: 18.x
-- **Python**: 3.10+
-- **Nginx**: (nur bei Production Setup)
-
-## Firewall Konfiguration
-
-Falls Sie eine Firewall verwenden, öffnen Sie folgende Ports:
-
-### Development Setup
-- Port 8000 (HTTP)
-- Port 9000 (Socketio)
-
-### Production Setup
-- Port 80 (HTTP)
-- Port 443 (HTTPS)
-
-## Proxmox LXC Konfiguration
-
-Empfohlene Container-Einstellungen in Proxmox:
-
-```conf
-arch: amd64
-cores: 2
-memory: 4096
-swap: 512
-rootfs: local-lvm:20
-net0: name=eth0,bridge=vmbr0,firewall=1,ip=dhcp
-features: nesting=1
-unprivileged: 1
-```
-
-## Troubleshooting
-
-### ERPNext startet nicht
+### Service startet nicht
 
 ```bash
-cd /home/frappe/frappe-bench
-bench start
-# Fehler in der Ausgabe prüfen
-```
-
-### Supervisor Probleme (Production)
-
-```bash
-sudo supervisorctl status
-sudo supervisorctl restart all
-sudo systemctl restart supervisor
-```
-
-### Nginx Fehler (Production)
-
-```bash
-sudo nginx -t
+# Prüfen ob alle Services laufen
 sudo systemctl status nginx
+sudo systemctl status mariadb
+sudo systemctl status redis-server
+sudo supervisorctl status all
+
+# Services neustarten
+sudo systemctl restart nginx
+sudo systemctl restart mariadb
+sudo supervisorctl restart all
+```
+
+### Permission Fehler
+
+```bash
+# Rechte korrigieren
+sudo chown -R frappe:frappe /home/frappe/frappe-bench
+
+# Supervisor neu konfigurieren
+cd /home/frappe/frappe-bench
+bench setup supervisor
+sudo supervisorctl reread
+sudo supervisorctl update
+```
+
+### Nginx Konfiguration prüfen
+
+```bash
+# Nginx Syntax prüfen
+sudo nginx -t
+
+# Nginx neustarten
 sudo systemctl restart nginx
 ```
 
 ### Datenbank Probleme
 
 ```bash
+# Als root in MySQL
 mysql -u root -p
-# MariaDB Status prüfen
-sudo systemctl status mariadb
+
+# MariaDB neu konfigurieren
+sudo systemctl restart mariadb
 ```
 
-### Permission Fehler
+### Port bereits belegt
 
 ```bash
-sudo chown -R frappe:frappe /home/frappe/frappe-bench
+# Prüfen welcher Prozess Port 8000 nutzt
+sudo lsof -i :8000
+
+# Prozess beenden und neu starten
 cd /home/frappe/frappe-bench
-bench setup socketio
-bench setup supervisor
-sudo supervisorctl reread
-sudo supervisorctl update
+bench restart
 ```
 
-## Updates
+## 🔄 Updates & Upgrades
 
 ### ERPNext updaten
 
@@ -208,27 +277,23 @@ cd /home/frappe/frappe-bench
 bench update
 ```
 
-### Manuelles Update einer App
+### Einzelne App updaten
 
 ```bash
-bench update --apps [APP-NAME]
+bench update --apps erpnext
+bench update --apps hrms
 ```
 
-## Deinstallation
+### System-Packages updaten
 
 ```bash
-# Container löschen oder:
-sudo systemctl stop supervisor
-sudo systemctl stop nginx
-sudo systemctl stop mariadb
-sudo systemctl stop redis-server
-sudo userdel -r frappe
-sudo rm -rf /home/frappe/frappe-bench
+sudo apt update
+sudo apt upgrade -y
 ```
 
-## Weitere Apps
+## 🌐 Zusätzliche Apps installieren
 
-Beliebte ERPNext Apps:
+### Beliebte ERPNext Apps:
 
 ```bash
 cd /home/frappe/frappe-bench
@@ -240,34 +305,183 @@ bench --site [SITE-NAME] install-app payments
 # Wiki App
 bench get-app --branch version-15 wiki
 bench --site [SITE-NAME] install-app wiki
+
+# Helpdesk App
+bench get-app --branch version-15 helpdesk
+bench --site [SITE-NAME] install-app helpdesk
 ```
 
-## Sicherheit
+## 🔒 Sicherheit
 
-- Ändern Sie nach der Installation sofort das Administrator-Passwort
-- Verwenden Sie starke Passwörter für MySQL und Admin
-- Bei Production Setup: Verwenden Sie eine echte Domain und SSL
-- Regelmäßige Backups erstellen: `bench backup`
-- System regelmäßig aktualisieren: `apt update && apt upgrade`
+### Empfohlene Sicherheitsmaßnahmen:
 
-## Support & Beiträge
+1. **Starke Passwörter** verwenden
+2. **SSH Key Authentication** einrichten
+3. **Firewall konfigurieren**:
+   ```bash
+   # UFW installieren
+   apt install ufw
+   
+   # Ports öffnen
+   ufw allow 22/tcp    # SSH
+   ufw allow 80/tcp    # HTTP
+   ufw allow 443/tcp   # HTTPS
+   
+   # Firewall aktivieren
+   ufw enable
+   ```
+4. **Regelmäßige Backups**:
+   ```bash
+   # Automatische tägliche Backups einrichten
+   crontab -e
+   # Folgende Zeile hinzufügen:
+   0 2 * * * cd /home/frappe/frappe-bench && bench backup
+   ```
+5. **System-Updates**: `apt update && apt upgrade` regelmäßig ausführen
 
-- Issues: [GitHub Issues](https://github.com/IHR-USERNAME/erpnext-proxmox-install/issues)
-- Contributions: Pull Requests willkommen!
-- ERPNext Dokumentation: https://docs.erpnext.com
-- Frappe Forum: https://discuss.frappe.io
+## 📱 Zugriff von außerhalb
 
-## Lizenz
+### Port Forwarding in Proxmox
 
-MIT License - siehe [LICENSE](LICENSE) Datei
+Wenn Sie von außerhalb des Netzwerks zugreifen möchten:
 
-## Credits
+1. **Router**: Port 80 und 443 auf Container-IP weiterleiten
+2. **Domain**: A-Record auf öffentliche IP setzen
+3. **SSL**: Let's Encrypt wird automatisch konfiguriert (bei Production Setup)
 
-- ERPNext & Frappe: https://erpnext.com
-- Inspiriert von: Proxmox Helper Scripts
-- Community Scripts: https://tteck.github.io/Proxmox/
+## 🗄️ Backup & Restore
 
-## Disclaimer
+### Backup erstellen
 
-Dieses Script wird "as is" bereitgestellt. Verwendung auf eigene Gefahr. 
-Immer Backups vor Systemänderungen erstellen!
+```bash
+cd /home/frappe/frappe-bench
+
+# Backup mit Dateien
+bench --site [SITE-NAME] backup --with-files
+
+# Backups finden sich in:
+ls -lh sites/[SITE-NAME]/private/backups/
+```
+
+### Backup wiederherstellen
+
+```bash
+# Datenbank wiederherstellen
+bench --site [SITE-NAME] --force restore [BACKUP-FILE].sql.gz
+
+# Mit Dateien
+bench --site [SITE-NAME] --force restore [BACKUP-FILE].sql.gz --with-private-files [FILES-BACKUP].tar --with-public-files [PUBLIC-FILES].tar
+```
+
+### Automatische Backups
+
+```bash
+# Backup-Script erstellen
+sudo nano /usr/local/bin/erpnext-backup.sh
+```
+
+Inhalt:
+```bash
+#!/bin/bash
+cd /home/frappe/frappe-bench
+bench --site all backup --with-files
+find sites/*/private/backups/ -name "*.gz" -mtime +7 -delete
+```
+
+Ausführbar machen und Cronjob einrichten:
+```bash
+sudo chmod +x /usr/local/bin/erpnext-backup.sh
+sudo crontab -e
+# Fügen Sie hinzu (tägliches Backup um 2 Uhr nachts):
+0 2 * * * /usr/local/bin/erpnext-backup.sh
+```
+
+## 💡 Performance-Tipps
+
+### MariaDB optimieren
+
+```bash
+sudo nano /etc/mysql/mariadb.conf.d/50-erpnext.cnf
+```
+
+Für 4GB RAM Container:
+```ini
+[mysqld]
+innodb_buffer_pool_size = 1G
+innodb_log_file_size = 256M
+max_connections = 200
+```
+
+### Redis optimieren
+
+```bash
+sudo nano /etc/redis/redis.conf
+```
+
+Ändern:
+```ini
+maxmemory 512mb
+maxmemory-policy allkeys-lru
+```
+
+## 📊 Monitoring
+
+### System-Ressourcen überwachen
+
+```bash
+# CPU & RAM
+htop
+
+# Disk Space
+df -h
+
+# Disk I/O
+iotop
+
+# Network
+iftop
+```
+
+### ERPNext Logs
+
+```bash
+cd /home/frappe/frappe-bench
+tail -f logs/*.log
+```
+
+## 🆘 Support & Community
+
+- **ERPNext Forum**: https://discuss.frappe.io
+- **Dokumentation**: https://docs.erpnext.com
+- **GitHub Issues**: [Issues](https://github.com/HatchetMan111/ERP-Proxmox/issues)
+- **Frappe GitHub**: https://github.com/frappe
+
+## 🤝 Contributing
+
+Beiträge sind willkommen! 
+
+1. Fork das Repository
+2. Feature Branch erstellen
+3. Änderungen commiten
+4. Pull Request öffnen
+
+Siehe auch: [CONTRIBUTING.md](CONTRIBUTING.md)
+
+## 📝 Lizenz
+
+MIT License - siehe [LICENSE](LICENSE)
+
+## 🙏 Credits
+
+- **ERPNext & Frappe**: https://erpnext.com
+- **Proxmox Helper Scripts**: https://community-scripts.github.io/ProxmoxVE/
+- **Community Scripts Projekt**: Original Scripts von tteck
+
+## ⚠️ Disclaimer
+
+Dieses Script wird "as is" bereitgestellt ohne jegliche Garantie. 
+Verwendung auf eigene Gefahr. Immer Backups vor Systemänderungen erstellen!
+
+---
+
+Made with ❤️ für die Proxmox Community
