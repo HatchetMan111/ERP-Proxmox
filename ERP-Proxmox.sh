@@ -1,74 +1,54 @@
 #!/bin/bash
 
-# ERPNext Installation Script for Proxmox VM (Ubuntu 22.04/24.04)
-# Inspired by Proxmox Helper Scripts design
-# License: MIT
+# =================================================================
+# ERPNext Installation Script (Proxmox VM / Ubuntu 24.04)
+# Autor: HatchetMan111
+# =================================================================
 
-set -e
-
-# Farben für die Ausgabe
-YW=$(echo "\033[33m")
-BL=$(echo "\033[36m")
-RD=$(echo "\033[01;31m")
-BGN=$(echo "\033[4;32m")
-GN=$(echo "\033[1;32m")
-DGN=$(echo "\033[32m")
-CL=$(echo "\033[m")
+# Farben für die Konsole
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
 
 # Header
-printf "${BL}
-###############################################################
-#                ERPNext Helper Installation                  #
-#         Geeignet für Proxmox VMs (Ubuntu LTS)               #
-###############################################################
-${CL}\n"
+echo -e "${BLUE}====================================================${NC}"
+echo -e "${GREEN}      Starte ERPNext Installation (Version 15)      ${NC}"
+echo -e "${BLUE}====================================================${NC}"
 
-# Funktions-Check: Root
-if [ "$(id -u)" -ne 0 ]; then
-  echo -e "${RD}Fehler: Dieses Skript muss als root ausgeführt werden.${CL}"
-  exit 1
+# 1. Root-Check
+if [[ $EUID -ne 0 ]]; then
+   echo -e "${RED}Fehler: Bitte als root ausführen!${NC}"
+   exit 1
 fi
 
-# Abfrage der Variablen
-read -p "Gib den gewünschten Benutzernamen ein (Standard: frappe): " FRAPPE_USER
-FRAPPE_USER=${FRAPPE_USER:-frappe}
-
-read -p "Gib den Namen für die erste ERPNext-Site ein (z.B. erp.local): " SITE_NAME
+# 2. Variablen-Abfrage (Benutzerfreundlich)
+echo -e "${BLUE}Konfiguration der Installation:${NC}"
+read -p "ERPNext Site Name (z.B. erp.local): " SITE_NAME
 SITE_NAME=${SITE_NAME:-erp.local}
 
-read -s -p "Gib das MariaDB Root-Passwort ein: " DB_ROOT_PASS
+read -s -p "MariaDB Root Passwort: " DB_ROOT_PASS
 echo ""
-read -s -p "Gib das Administrator-Passwort für ERPNext ein: " ADMIN_PASS
+read -s -p "ERPNext Administrator Passwort: " ADMIN_PASS
 echo ""
 
-# 1. System Update
-echo -e "${BL}1. Aktualisiere Systempakete...${CL}"
+# 3. System-Update
+echo -e "${BLUE}[1/7] Aktualisiere Systempakete...${NC}"
 apt-get update && apt-get upgrade -y
 
-# 2. Abhängigkeiten installieren
-echo -e "${BL}2. Installiere Abhängigkeiten (Python, Redis, Git, etc.)...${CL}"
+# 4. Abhängigkeiten installieren
+echo -e "${BLUE}[2/7] Installiere Software-Abhängigkeiten...${NC}"
 apt-get install -y git python3-dev python3-pip python3-venv \
-    software-properties-common mariadb-server mariadb-client \
-    redis-server wget curl cron sudo libssl-dev \
-    pkg-config libmysqlclient-dev
+    mariadb-server mariadb-client redis-server wget curl cron sudo \
+    libssl-dev pkg-config libmysqlclient-dev nodejs npm
 
-# 3. MariaDB Konfiguration (Optimierung für ERPNext)
-echo -e "${BL}3. Konfiguriere MariaDB...${CL}"
+# Node.js & Yarn Fix
+npm install -g yarn
+
+# 5. MariaDB Konfiguration (Wichtig für ERPNext!)
+echo -e "${BLUE}[3/7] Konfiguriere Datenbank...${NC}"
 cat <<EOF > /etc/mysql/mariadb.conf.d/erpnext.cnf
-[server]
-user = mysql
-pid-file = /run/mysqld/mysqld.pid
-socket = /run/mysqld/mysqld.sock
-basedir = /usr
-datadir = /var/lib/mysql
-tmpdir = /tmp
-lc-messages-dir = /usr/share/mysql
-bind-address = 127.0.0.1
-query_cache_size = 16M
-log_error = /var/log/mysql/error.log
-
 [mysqld]
-innodb-check-optimize-helper
 innodb_file_per_table = 1
 character-set-client-handshake = FALSE
 character-set-server = utf8mb4
@@ -79,46 +59,39 @@ default-character-set = utf8mb4
 EOF
 
 systemctl restart mariadb
-
-# MariaDB Root Passwort setzen
 mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '$DB_ROOT_PASS';"
-mysql -u root -p"$DB_ROOT_PASS" -e "DELETE FROM mysql.user WHERE User='';"
 mysql -u root -p"$DB_ROOT_PASS" -e "FLUSH PRIVILEGES;"
 
-# 4. Node.js & Yarn
-echo -e "${BL}4. Installiere Node.js & Yarn...${CL}"
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-apt-get install -y nodejs
-npm install -g yarn
+# 6. Frappe Benutzer anlegen
+echo -e "${BLUE}[4/7] Erstelle Benutzer 'frappe'...${NC}"
+if ! id "frappe" &>/dev/null; then
+    useradd -m -s /bin/bash frappe
+    usermod -aG sudo frappe
+    echo "frappe ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+fi
 
-# 5. Frappe Benutzer anlegen
-echo -e "${BL}5. Erstelle Benutzer '$FRAPPE_USER'...${CL}"
-useradd -m -s /bin/bash $FRAPPE_USER
-usermod -aG sudo $FRAPPE_USER
-echo "$FRAPPE_USER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+# 7. ERPNext Installation (als User frappe)
+echo -e "${BLUE}[5/7] Installiere Frappe Bench & ERPNext (Dauert ca. 10 Min)...${NC}"
+pip3 install frappe-bench --break-system-packages
 
-# 6. Frappe-Bench Installation
-echo -e "${BL}6. Installiere Frappe-Bench...${CL}"
-pip3 install frappe-bench
+sudo -u frappe -H bash -c "
+    cd /home/frappe
+    export PATH=\$PATH:/home/frappe/.local/bin
+    bench init frappe-bench --frappe-branch version-15 --skip-redis-config-check
+    cd frappe-bench
+    bench get-app erpnext --branch version-15
+    bench new-site $SITE_NAME --mariadb-root-password '$DB_ROOT_PASS' --admin-password '$ADMIN_PASS' --install-app erpnext
+"
 
-# 7. Bench initialisieren & ERPNext Setup
-echo -e "${BL}7. Initialisiere Bench & installiere ERPNext (Dies kann dauern)...${CL}"
-su - $FRAPPE_USER <<EOF
-export PATH=\$PATH:/home/$FRAPPE_USER/.local/bin
-bench init frappe-bench --frappe-branch version-15
-cd frappe-bench
-bench get-app erpnext --branch version-15
-bench new-site $SITE_NAME --mariadb-root-password "$DB_ROOT_PASS" --admin-password "$ADMIN_PASS" --install-app erpnext
-EOF
+# 8. Produktionseinrichtung
+echo -e "${BLUE}[6/7] Richte Produktionsmodus ein (Nginx)...${NC}"
+cd /home/frappe/frappe-bench
+bench setup production frappe --yes
 
-# 8. Produktionseinrichtung (Nginx & Supervisor)
-echo -e "${BL}8. Konfiguriere Produktionsmodus (Nginx/Supervisor)...${CL}"
-cd /home/$FRAPPE_USER/frappe-bench
-sudo bench setup production $FRAPPE_USER --yes
-
-# Abschluss
-echo -e "${GN}###############################################################${CL}"
-echo -e "${GN} INSTALLATION ABGESCHLOSSEN ${CL}"
-echo -e "${DGN} Site: http://$(hostname -I | awk '{print $1}')${CL}"
-echo -e "${DGN} Administrator Passwort: $ADMIN_PASS ${CL}"
-echo -e "${GN}###############################################################${CL}"
+echo -e "${GREEN}====================================================${NC}"
+echo -e "${GREEN}   INSTALLATION ERFOLGREICH ABGESCHLOSSEN!          ${NC}"
+echo -e "   URL: http://$(hostname -I | awk '{print $1}')"
+echo -e "   Site: $SITE_NAME"
+echo -e "   Admin-User: Administrator"
+echo -e "   Admin-Passwort: $ADMIN_PASS"
+echo -e "${GREEN}====================================================${NC}"
