@@ -7,4 +7,4 @@ Dieses Repository enthält automatisierte Skripte, um **ERPNext v15** schnell un
 Führe diesen Befehl in deiner **Proxmox Shell** aus, um eine vorkonfigurierte VM zu erstellen:
 
 ```bash
-/bin/bash -c "$(curl -fsSL [https://raw.githubusercontent.com/HatchetMan111/ERP-Proxmox/main/setup_vm.sh](https://raw.githubusercontent.com/HatchetMan111/ERP-Proxmox/main/setup_vm.sh))"
+wget -qO- [https://raw.githubusercontent.com/HatchetMan111/ERP-Proxmox/main/install.sh](https://raw.githubusercontent.com/HatchetMan111/ERP-Proxmox/main/install.sh) | sudo bash
