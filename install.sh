@@ -21,15 +21,15 @@ CM="${GN}✓${CL}"
 CROSS="${RD}✗${CL}"
 
 msg_info() {
-    echo -ne " ${HOLD} ${YW}$1...${CL}"
+    echo -ne " ${HOLD} ${YW}$1...${CL}\r"
 }
 
 msg_ok() {
-    echo -e "${BFR} ${CM} ${GN}$1${CL}"
+    echo -e "\r ${CM} ${GN}$1${CL}"
 }
 
 msg_error() {
-    echo -e "${BFR} ${CROSS} ${RD}$1${CL}"
+    echo -e "\r ${CROSS} ${RD}$1${CL}"
 }
 
 # Check if running as root
@@ -90,13 +90,14 @@ echo -e "\n${BL}═════════════════════�
 
 # Update system
 msg_info "Updating system packages"
-DEBIAN_FRONTEND=noninteractive apt-get update -qq >/dev/null 2>&1
-DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -qq >/dev/null 2>&1
+apt-get update -qq >/dev/null 2>&1
+apt-get upgrade -y -qq >/dev/null 2>&1
 msg_ok "System updated"
 
 # Install required packages
 msg_info "Installing system dependencies"
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+export DEBIAN_FRONTEND=noninteractive
+apt-get install -y -qq \
     git python3-dev python3-pip python3-venv \
     software-properties-common libmysqlclient-dev \
     mariadb-server mariadb-client \
@@ -114,7 +115,7 @@ msg_ok "System dependencies installed"
 # Install Node.js 18
 msg_info "Installing Node.js 18"
 curl -fsSL https://deb.nodesource.com/setup_18.x 2>/dev/null | bash - >/dev/null 2>&1
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq nodejs >/dev/null 2>&1
+apt-get install -y -qq nodejs >/dev/null 2>&1
 msg_ok "Node.js $(node --version) installed"
 
 # Install Yarn
