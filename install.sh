@@ -90,8 +90,9 @@ echo -e "\n${BL}═════════════════════�
 
 # Update system
 msg_info "Updating system packages"
-apt-get update -qq >/dev/null 2>&1
-apt-get upgrade -y -qq >/dev/null 2>&1
+export DEBIAN_FRONTEND=noninteractive
+apt-get update -y 2>&1 | grep -v "^[WE]:" || true
+apt-get upgrade -y -o Dpkg::Options::="--force-confold" 2>&1 | grep -v "^[WE]:" || true
 msg_ok "System updated"
 
 # Install required packages
