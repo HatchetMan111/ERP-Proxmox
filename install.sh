@@ -5,7 +5,7 @@
 # Author: Your Name
 # License: MIT
 
-set -euo pipefail
+set -e
 shopt -s inherit_errexit nullglob
 
 YW=$(echo "\033[33m")
@@ -91,8 +91,8 @@ echo -e "\n${BL}═════════════════════�
 # Update system
 msg_info "Updating system packages"
 export DEBIAN_FRONTEND=noninteractive
-apt-get update -y 2>&1 | grep -v "^[WE]:" || true
-apt-get upgrade -y -o Dpkg::Options::="--force-confold" 2>&1 | grep -v "^[WE]:" || true
+apt-get update -y
+apt-get upgrade -y -o Dpkg::Options::="--force-confold" -o Dpkg::Options::="--force-confdef"
 msg_ok "System updated"
 
 # Install required packages
