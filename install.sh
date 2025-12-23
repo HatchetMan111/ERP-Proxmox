@@ -90,13 +90,13 @@ echo -e "\n${BL}═════════════════════�
 
 # Update system
 msg_info "Updating system packages"
-apt-get update &>/dev/null
-apt-get upgrade -y &>/dev/null
+DEBIAN_FRONTEND=noninteractive apt-get update -qq >/dev/null 2>&1
+DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -qq >/dev/null 2>&1
 msg_ok "System updated"
 
 # Install required packages
 msg_info "Installing system dependencies"
-apt-get install -y \
+DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
     git python3-dev python3-pip python3-venv \
     software-properties-common libmysqlclient-dev \
     mariadb-server mariadb-client \
@@ -108,18 +108,18 @@ apt-get install -y \
     libssl-dev \
     wkhtmltopdf \
     xvfb libfontconfig \
-    cron &>/dev/null
+    cron >/dev/null 2>&1
 msg_ok "System dependencies installed"
 
 # Install Node.js 18
 msg_info "Installing Node.js 18"
-curl -fsSL https://deb.nodesource.com/setup_18.x | bash - &>/dev/null
-apt-get install -y nodejs &>/dev/null
+curl -fsSL https://deb.nodesource.com/setup_18.x 2>/dev/null | bash - >/dev/null 2>&1
+DEBIAN_FRONTEND=noninteractive apt-get install -y -qq nodejs >/dev/null 2>&1
 msg_ok "Node.js $(node --version) installed"
 
 # Install Yarn
 msg_info "Installing Yarn"
-npm install -g yarn &>/dev/null
+npm install -g yarn >/dev/null 2>&1
 msg_ok "Yarn installed"
 
 # Configure MariaDB
@@ -138,10 +138,10 @@ default-character-set = utf8mb4
 EOF
 
 # Secure MariaDB
-mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';" &>/dev/null || true
-mysql -u root -p"${MYSQL_ROOT_PASSWORD}" -e "DELETE FROM mysql.user WHERE User='';" &>/dev/null
-mysql -u root -p"${MYSQL_ROOT_PASSWORD}" -e "DROP DATABASE IF EXISTS test;" &>/dev/null
-mysql -u root -p"${MYSQL_ROOT_PASSWORD}" -e "FLUSH PRIVILEGES;" &>/dev/null
+mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';" 2>/dev/null || true
+mysql -u root -p"${MYSQL_ROOT_PASSWORD}" -e "DELETE FROM mysql.user WHERE User='';" 2>/dev/null
+mysql -u root -p"${MYSQL_ROOT_PASSWORD}" -e "DROP DATABASE IF EXISTS test;" 2>/dev/null
+mysql -u root -p"${MYSQL_ROOT_PASSWORD}" -e "FLUSH PRIVILEGES;" 2>/dev/null
 
 systemctl restart mariadb
 msg_ok "MariaDB configured"
@@ -163,14 +163,14 @@ msg_ok "Frappe user created"
 
 # Install bench
 msg_info "Installing Frappe Bench"
-pip3 install --upgrade pip &>/dev/null
-pip3 install frappe-bench &>/dev/null
+pip3 install --upgrade pip >/dev/null 2>&1
+pip3 install frappe-bench >/dev/null 2>&1
 msg_ok "Frappe Bench installed"
 
 # Initialize bench
 msg_info "Initializing Frappe Bench (this may take several minutes)"
 cd /home/frappe
-sudo -u frappe bench init --frappe-branch version-15 frappe-bench &>/dev/null
+sudo -u frappe bench init --frappe-branch version-15 frappe-bench >/dev/null 2>&1
 cd /home/frappe/frappe-bench
 msg_ok "Frappe Bench initialized"
 
@@ -179,19 +179,19 @@ msg_info "Creating ERPNext site: ${SITE_NAME}"
 sudo -u frappe bench new-site ${SITE_NAME} \
     --mariadb-root-password "${MYSQL_ROOT_PASSWORD}" \
     --admin-password "${ADMIN_PASSWORD}" \
-    --no-mariadb-socket &>/dev/null
+    --no-mariadb-socket >/dev/null 2>&1
 msg_ok "Site ${SITE_NAME} created"
 
 # Install ERPNext
 msg_info "Installing ERPNext app (this may take 10-15 minutes)"
-sudo -u frappe bench get-app --branch version-15 erpnext &>/dev/null
-sudo -u frappe bench --site ${SITE_NAME} install-app erpnext &>/dev/null
+sudo -u frappe bench get-app --branch version-15 erpnext >/dev/null 2>&1
+sudo -u frappe bench --site ${SITE_NAME} install-app erpnext >/dev/null 2>&1
 msg_ok "ERPNext installed"
 
 # Install additional apps (optional)
 msg_info "Installing HRMS app"
-sudo -u frappe bench get-app --branch version-15 hrms &>/dev/null
-sudo -u frappe bench --site ${SITE_NAME} install-app hrms &>/dev/null
+sudo -u frappe bench get-app --branch version-15 hrms >/dev/null 2>&1
+sudo -u frappe bench --site ${SITE_NAME} install-app hrms >/dev/null 2>&1
 msg_ok "HRMS installed"
 
 # Configure production
@@ -199,12 +199,12 @@ if [[ "$PRODUCTION" == "y" ]]; then
     msg_info "Setting up production environment"
     
     # Setup production
-    sudo -u frappe bench setup production frappe --yes &>/dev/null
+    sudo -u frappe bench setup production frappe --yes >/dev/null 2>&1
     
     # Setup SSL
     if [[ -n "$LETSENCRYPT_EMAIL" ]]; then
         msg_info "Setting up SSL with Let's Encrypt"
-        sudo -u frappe bench setup lets-encrypt ${SITE_NAME} --email ${LETSENCRYPT_EMAIL} &>/dev/null || true
+        sudo -u frappe bench setup lets-encrypt ${SITE_NAME} --email ${LETSENCRYPT_EMAIL} >/dev/null 2>&1 || true
         msg_ok "SSL configured"
     fi
     
@@ -216,12 +216,12 @@ else
     echo "127.0.0.1 ${SITE_NAME}" >> /etc/hosts
     
     # Setup socketio
-    sudo -u frappe bench setup socketio &>/dev/null
+    sudo -u frappe bench setup socketio >/dev/null 2>&1
     
     # Setup supervisor (for background jobs)
-    sudo -u frappe bench setup supervisor &>/dev/null
-    supervisorctl reread &>/dev/null
-    supervisorctl update &>/dev/null
+    sudo -u frappe bench setup supervisor >/dev/null 2>&1
+    supervisorctl reread >/dev/null 2>&1
+    supervisorctl update >/dev/null 2>&1
     
     msg_ok "Development environment configured"
 fi
@@ -234,20 +234,20 @@ msg_ok "Permissions set"
 # Enable and start services
 msg_info "Starting services"
 if [[ "$PRODUCTION" == "y" ]]; then
-    systemctl enable nginx &>/dev/null
-    systemctl restart nginx &>/dev/null
-    systemctl enable supervisor &>/dev/null
-    systemctl restart supervisor &>/dev/null
+    systemctl enable nginx >/dev/null 2>&1
+    systemctl restart nginx >/dev/null 2>&1
+    systemctl enable supervisor >/dev/null 2>&1
+    systemctl restart supervisor >/dev/null 2>&1
 else
-    systemctl enable supervisor &>/dev/null
-    systemctl restart supervisor &>/dev/null
+    systemctl enable supervisor >/dev/null 2>&1
+    systemctl restart supervisor >/dev/null 2>&1
 fi
 msg_ok "Services started"
 
 # Cleanup
 msg_info "Cleaning up"
-apt-get autoremove -y &>/dev/null
-apt-get autoclean -y &>/dev/null
+apt-get autoremove -y >/dev/null 2>&1
+apt-get autoclean -y >/dev/null 2>&1
 msg_ok "Cleanup completed"
 
 # Display completion message
