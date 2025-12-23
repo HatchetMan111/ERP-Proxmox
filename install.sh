@@ -21,15 +21,15 @@ CM="${GN}✓${CL}"
 CROSS="${RD}✗${CL}"
 
 msg_info() {
-    echo -ne " ${HOLD} ${YW}$1...${CL}\r"
+    echo -ne " ${HOLD} ${YW}$1${CL}"
 }
 
 msg_ok() {
-    echo -e "\r ${CM} ${GN}$1${CL}"
+    echo -e "\r\033[K ${CM} ${GN}$1${CL}"
 }
 
 msg_error() {
-    echo -e "\r ${CROSS} ${RD}$1${CL}"
+    echo -e "\r\033[K ${CROSS} ${RD}$1${CL}"
 }
 
 # Check if running as root
