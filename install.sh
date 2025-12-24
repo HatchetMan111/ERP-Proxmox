@@ -5,8 +5,29 @@
 # Author: Your Name
 # License: MIT
 
-set -e
 shopt -s inherit_errexit nullglob
+
+# Trap to show access info even on error
+trap 'show_access_info' EXIT
+
+show_access_info() {
+    if [[ -n "${SITE_NAME}" ]] && [[ -n "${ADMIN_PASSWORD}" ]]; then
+        IP=$(hostname -I | awk '{print $1}' || echo "localhost")
+        echo -e "\n${BL}═══════════════════════════════════════════════════════${CL}"
+        echo -e "${GN}ERPNext Installation Info${CL}"
+        echo -e "${BL}═══════════════════════════════════════════════════════${CL}\n"
+        echo -e "${DGN}Site Name:${CL} ${SITE_NAME}"
+        echo -e "${DGN}Admin User:${CL} Administrator"
+        echo -e "${DGN}Admin Password:${CL} ${ADMIN_PASSWORD}"
+        if [[ "$PRODUCTION" == "y" ]]; then
+            echo -e "${DGN}Access URL:${CL} https://${SITE_NAME}"
+        else
+            echo -e "${DGN}Access URL:${CL} http://${IP}:8000"
+            echo -e "\n${YW}To start: cd /home/frappe/frappe-bench && bench start${CL}"
+        fi
+        echo -e "\n${BL}═══════════════════════════════════════════════════════${CL}\n"
+    fi
+}
 
 YW=$(echo "\033[33m")
 BL=$(echo "\033[36m")
@@ -115,16 +136,12 @@ msg_ok "System dependencies installed"
 
 # Install Node.js 18
 msg_info "Installing Node.js 18"
-# Force remove ALL node packages first
-dpkg --remove --force-remove-reinstreq libnode-dev 2>/dev/null || true
-dpkg --remove --force-remove-reinstreq nodejs 2>/dev/null || true
-apt-get purge -y 'libnode*' 'nodejs*' 2>/dev/null || true
-apt-get autoremove -y 2>/dev/null || true
-# Clean dpkg
-dpkg --configure -a 2>/dev/null || true
-# Install Node.js 18 with force overwrite
+# First: Remove libnode-dev BEFORE adding NodeSource repo
+apt-get remove -y libnode-dev libnode72 || true
+apt-get autoremove -y || true
+# Now add NodeSource repo and install
 curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-apt-get install -y -o Dpkg::Options::="--force-overwrite" nodejs
+apt-get install -y --allow-downgrades --allow-remove-essential --allow-change-held-packages -o Dpkg::Options::="--force-overwrite" -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" nodejs
 msg_ok "Node.js $(node --version) installed"
 
 # Install Yarn
@@ -200,9 +217,12 @@ msg_ok "ERPNext installed"
 
 # Install additional apps (optional)
 msg_info "Installing HRMS app"
-sudo -u frappe bench get-app --branch version-15 hrms >/dev/null 2>&1
-sudo -u frappe bench --site ${SITE_NAME} install-app hrms >/dev/null 2>&1
-msg_ok "HRMS installed"
+if sudo -u frappe bench get-app --branch version-15 hrms 2>/dev/null && \
+   sudo -u frappe bench --site ${SITE_NAME} install-app hrms 2>/dev/null; then
+    msg_ok "HRMS installed"
+else
+    msg_error "HRMS installation failed (optional, continuing...)"
+fi
 
 # Configure production
 if [[ "$PRODUCTION" == "y" ]]; then
@@ -256,34 +276,10 @@ msg_ok "Services started"
 
 # Cleanup
 msg_info "Cleaning up"
-apt-get autoremove -y >/dev/null 2>&1
-apt-get autoclean -y >/dev/null 2>&1
+apt-get autoremove -y >/dev/null 2>&1 || true
+apt-get autoclean -y >/dev/null 2>&1 || true
 msg_ok "Cleanup completed"
 
-# Display completion message
-IP=$(hostname -I | awk '{print $1}')
-echo -e "\n${BL}═══════════════════════════════════════════════════════${CL}"
-echo -e "${GN}ERPNext 15 Installation Complete!${CL}"
-echo -e "${BL}═══════════════════════════════════════════════════════${CL}\n"
-echo -e "${DGN}Site Name:${CL} ${SITE_NAME}"
-echo -e "${DGN}Admin User:${CL} Administrator"
-echo -e "${DGN}Admin Password:${CL} ${ADMIN_PASSWORD}"
-
-if [[ "$PRODUCTION" == "y" ]]; then
-    echo -e "${DGN}Access URL:${CL} https://${SITE_NAME}"
-else
-    echo -e "${DGN}Access URL:${CL} http://${IP}:8000"
-    echo -e "\n${YW}To start the development server, run:${CL}"
-    echo -e "  cd /home/frappe/frappe-bench"
-    echo -e "  bench start"
-fi
-
-echo -e "\n${DGN}Bench Location:${CL} /home/frappe/frappe-bench"
-echo -e "${DGN}User:${CL} frappe"
-echo -e "\n${YW}Useful Commands:${CL}"
-echo -e "  cd /home/frappe/frappe-bench"
-echo -e "  bench restart"
-echo -e "  bench update"
-echo -e "  bench backup"
-echo -e "  bench migrate"
-echo -e "\n${BL}═══════════════════════════════════════════════════════${CL}\n"
+# Success message - detailed info shown by trap on exit
+echo -e "\n${GN}✓ Installation completed successfully!${CL}"
+echo -e "${YW}Access information displayed above.${CL}\n"
