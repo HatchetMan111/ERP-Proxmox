@@ -115,16 +115,16 @@ msg_ok "System dependencies installed"
 
 # Install Node.js 18
 msg_info "Installing Node.js 18"
-# Completely purge all old Node.js packages
-apt-get remove -y nodejs libnode-dev libnode72 2>/dev/null || true
-apt-get purge -y nodejs libnode-dev libnode72 2>/dev/null || true
+# Force remove ALL node packages first
+dpkg --remove --force-remove-reinstreq libnode-dev 2>/dev/null || true
+dpkg --remove --force-remove-reinstreq nodejs 2>/dev/null || true
+apt-get purge -y 'libnode*' 'nodejs*' 2>/dev/null || true
 apt-get autoremove -y 2>/dev/null || true
-# Force remove conflicting files
-rm -rf /usr/include/node 2>/dev/null || true
-rm -rf /usr/lib/node_modules 2>/dev/null || true
-# Install Node.js 18
+# Clean dpkg
+dpkg --configure -a 2>/dev/null || true
+# Install Node.js 18 with force overwrite
 curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-apt-get install -y nodejs
+apt-get install -y -o Dpkg::Options::="--force-overwrite" nodejs
 msg_ok "Node.js $(node --version) installed"
 
 # Install Yarn
