@@ -115,9 +115,13 @@ msg_ok "System dependencies installed"
 
 # Install Node.js 18
 msg_info "Installing Node.js 18"
-# Remove old Node.js versions first
-apt-get remove -y nodejs libnode-dev 2>/dev/null || true
+# Completely purge all old Node.js packages
+apt-get remove -y nodejs libnode-dev libnode72 2>/dev/null || true
+apt-get purge -y nodejs libnode-dev libnode72 2>/dev/null || true
 apt-get autoremove -y 2>/dev/null || true
+# Force remove conflicting files
+rm -rf /usr/include/node 2>/dev/null || true
+rm -rf /usr/lib/node_modules 2>/dev/null || true
 # Install Node.js 18
 curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
 apt-get install -y nodejs
