@@ -115,8 +115,12 @@ msg_ok "System dependencies installed"
 
 # Install Node.js 18
 msg_info "Installing Node.js 18"
-curl -fsSL https://deb.nodesource.com/setup_18.x 2>/dev/null | bash - >/dev/null 2>&1
-apt-get install -y -qq nodejs >/dev/null 2>&1
+# Remove old Node.js versions first
+apt-get remove -y nodejs libnode-dev 2>/dev/null || true
+apt-get autoremove -y 2>/dev/null || true
+# Install Node.js 18
+curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+apt-get install -y nodejs
 msg_ok "Node.js $(node --version) installed"
 
 # Install Yarn
